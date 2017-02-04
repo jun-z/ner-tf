@@ -14,14 +14,13 @@ tf.app.flags.DEFINE_string('data_dir', './data', 'Data directory.')
 tf.app.flags.DEFINE_string('train_dir', './model', 'Training directory.')
 tf.app.flags.DEFINE_integer('num_epochs', 5, 'Number of epochs.')
 tf.app.flags.DEFINE_integer('batch_size', 20, 'Batch size.')
-tf.app.flags.DEFINE_float('learning_rate', .03, 'Learning rate.')
-
 tf.app.flags.DEFINE_integer('num_units', 50, 'Number of units in LSTM.')
 tf.app.flags.DEFINE_integer('num_layers', 1, 'Number of LSTM layers.')
 tf.app.flags.DEFINE_integer('num_steps', 25, 'Max number of time steps')
 tf.app.flags.DEFINE_integer('num_labels', 8, 'Number of labels.')
 tf.app.flags.DEFINE_integer('emb_size', 10, 'Size of embedding.')
 tf.app.flags.DEFINE_integer('vocab_size', 45, 'Size of vocabulary.')
+tf.app.flags.DEFINE_float('learning_rate', .03, 'Learning rate.')
 tf.app.flags.DEFINE_bool('use_fp16', False, 'Use tf.float16.')
 tf.app.flags.DEFINE_bool('do_label', False, 'Train model or label sequence.')
 
@@ -68,24 +67,28 @@ def train():
                 sess,
                 os.path.join(FLAGS.train_dir, 'ner.ckpt'),
                 global_step=epoch)
-            probs = sess.run(
-                model.probs, feed_dict={
+            loss, probs = sess.run(
+                [model.loss, model.probs], feed_dict={
                     model.inputs: valid['inputs'],
                     model.labels: valid['labels'],
                     model.lengths: valid['lengths'],
                     model.weights: valid['weights']})
             preds = np.argmax(probs, axis=2)
             acc = accuracy(preds, valid['labels'], valid['lengths'])
-            print('Epoch %i finished, validation accuracy %0.2f' % (epoch, acc))
-        probs = sess.run(
-            model.probs, feed_dict={
+            print('Epoch %i finished' % epoch)
+            print('* validation loss %0.2f' % loss)
+            print('* validation accuracy %0.2f' % acc)
+        loss, probs = sess.run(
+            [model.loss, model.probs], feed_dict={
                 model.inputs: test['inputs'],
                 model.labels: test['labels'],
                 model.lengths: test['lengths'],
                 model.weights: test['weights']})
         preds = np.argmax(probs, axis=2)
         acc = accuracy(preds, test['labels'], test['lengths'])
-        print('Training finished, testing accuracy %0.2f' % acc)
+        print('Training finished')
+        print('* testing loss %0.2f' % loss)
+        print('* testing accuracy %0.2f' % acc)
 
 
 def label():

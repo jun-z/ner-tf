@@ -49,14 +49,14 @@ class BLSTM(object):
         logits = tf.reshape(
             tf.matmul(output, W) + b, [-1, num_steps, num_labels])
 
-        loss = tf.nn.seq2seq.sequence_loss(
+        self.loss = tf.nn.seq2seq.sequence_loss(
             tf.unstack(logits, axis=1),
             tf.unstack(self.labels, axis=1),
             tf.unstack(self.weights, axis=1))
 
         optimizer = tf.train.AdamOptimizer(learning_rate)
         params = tf.trainable_variables()
-        grads, _ = tf.clip_by_global_norm(tf.gradients(loss, params), 10)
+        grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, params), 10)
 
         self.probs = tf.nn.softmax(logits)
         self.train = optimizer.apply_gradients(zip(grads, params))
