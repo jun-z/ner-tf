@@ -17,6 +17,7 @@ class BLSTM(object):
                  emb_size,
                  vocab_size,
                  learning_rate,
+                 max_clip_norm,
                  dtype=tf.float32):
 
         self.inputs = tf.placeholder(tf.int32, [None, num_steps])
@@ -56,7 +57,8 @@ class BLSTM(object):
 
         optimizer = tf.train.AdamOptimizer(learning_rate)
         params = tf.trainable_variables()
-        grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, params), 10)
+        grads, _ = tf.clip_by_global_norm(
+            tf.gradients(self.loss, params), max_clip_norm)
 
         self.probs = tf.nn.softmax(logits)
         self.train = optimizer.apply_gradients(zip(grads, params))

@@ -21,6 +21,7 @@ tf.app.flags.DEFINE_integer('num_labels', 8, 'Number of labels.')
 tf.app.flags.DEFINE_integer('emb_size', 10, 'Size of embedding.')
 tf.app.flags.DEFINE_integer('vocab_size', 45, 'Size of vocabulary.')
 tf.app.flags.DEFINE_float('learning_rate', .03, 'Learning rate.')
+tf.app.flags.DEFINE_float('max_clip_norm', 5.0, 'Clip norm for gradients.')
 tf.app.flags.DEFINE_bool('use_fp16', False, 'Use tf.float16.')
 tf.app.flags.DEFINE_bool('do_label', False, 'Train model or label sequence.')
 
@@ -36,6 +37,7 @@ def create_model(session):
         FLAGS.emb_size,
         FLAGS.vocab_size,
         FLAGS.learning_rate,
+        FLAGS.max_clip_norm,
         tf.float16 if FLAGS.use_fp16 else tf.float32)
 
     ckpt = tf.train.get_checkpoint_state(FLAGS.train_dir)
