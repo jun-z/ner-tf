@@ -74,10 +74,11 @@ def train():
                     model.lengths: valid['lengths'],
                     model.weights: valid['weights']})
             preds = np.argmax(probs, axis=2)
-            acc = accuracy(preds, valid['labels'], valid['lengths'])
+            l_acc, r_acc = accuracy(preds, valid['labels'], valid['lengths'])
             print('Epoch %i finished' % epoch)
             print('* validation loss %0.2f' % loss)
-            print('* validation accuracy %0.2f' % acc)
+            print('* label level accuracy %0.2f' % l_acc)
+            print('* record level accuracy %0.2f' % r_acc)
         loss, probs = sess.run(
             [model.loss, model.probs], feed_dict={
                 model.inputs: test['inputs'],
@@ -85,10 +86,11 @@ def train():
                 model.lengths: test['lengths'],
                 model.weights: test['weights']})
         preds = np.argmax(probs, axis=2)
-        acc = accuracy(preds, test['labels'], test['lengths'])
+        l_acc, r_acc = accuracy(preds, test['labels'], test['lengths'])
         print('Training finished')
         print('* testing loss %0.2f' % loss)
-        print('* testing accuracy %0.2f' % acc)
+        print('* label level accuracy %0.2f' % l_acc)
+        print('* record level accuracy %0.2f' % r_acc)
 
 
 def label():

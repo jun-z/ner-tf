@@ -32,10 +32,16 @@ def load_vocab(data_dir, ext):
 
 
 def accuracy(preds, labels, length):
-    corrects = total = len(labels)
-    for i in range(total):
+    label_c = label_t = 0
+    record_c = record_t = len(labels)
+    for i in range(record_t):
+        record_a = True
         for j in range(length[i]):
-            if preds[i, j] != labels[i][j]:
-                corrects -= 1
-                break
-    return corrects / total
+            if preds[i][j] == labels[i][j]:
+                label_c += 1
+            else:
+                record_a = False
+            label_t += 1
+        if not record_a:
+            record_c -= 1
+    return label_c / label_t, record_c / record_t
