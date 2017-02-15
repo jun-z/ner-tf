@@ -1,13 +1,6 @@
 import tensorflow as tf
 
 
-def get_cell(num_units, num_layers):
-    cell = tf.nn.rnn_cell.BasicLSTMCell(num_units)
-    if num_layers > 1:
-        cell = tf.nn.rnn_cell.MultiRNNCell([cell] * num_layers)
-    return cell
-
-
 class BLSTM(object):
     def __init__(self,
                  num_units,
@@ -30,9 +23,13 @@ class BLSTM(object):
 
         inp_emb = tf.nn.embedding_lookup(embedding, self.inputs)
 
+        cell = tf.nn.rnn_cell.BasicLSTMCell(num_units)
+        if num_layers > 1:
+            cell = tf.nn.rnn_cell.MultiRNNCell([cell] * num_layers)
+
         outputs, _, _ = tf.nn.bidirectional_rnn(
-            cell_fw=get_cell(num_units, num_layers),
-            cell_bw=get_cell(num_units, num_layers),
+            cell_fw=cell,
+            cell_bw=cell,
             inputs=tf.unpack(tf.transpose(inp_emb, perm=[1, 0, 2])),
             dtype=dtype,
             sequence_length=self.lengths)
