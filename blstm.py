@@ -30,12 +30,11 @@ class BLSTM(object):
         outputs, _, _ = tf.nn.bidirectional_rnn(
             cell_fw=cell,
             cell_bw=cell,
-            inputs=tf.unpack(tf.transpose(inp_emb, perm=[1, 0, 2])),
+            inputs=tf.unstack(inp_emb, axis=1),
             dtype=dtype,
             sequence_length=self.lengths)
 
-        output = tf.reshape(
-            tf.transpose(tf.pack(outputs), perm=[1, 0, 2]), [-1, 2 * num_units])
+        output = tf.reshape(tf.stack(outputs, axis=1), [-1, 2 * num_units])
 
         W = tf.get_variable(
             'W', [num_units * 2, num_labels], dtype=dtype,
