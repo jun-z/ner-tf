@@ -36,12 +36,13 @@ class BLSTM(object):
 
         output = tf.reshape(tf.stack(outputs, axis=1), [-1, 2 * num_units])
 
-        W = tf.get_variable(
-            'W', [num_units * 2, num_labels], dtype=dtype,
-            initializer=tf.truncated_normal_initializer(stddev=.01))
-        b = tf.get_variable(
-            'b', [num_labels], dtype=dtype,
-            initializer=tf.constant_initializer(.1))
+        with tf.variable_scope('Projection'):
+            W = tf.get_variable(
+                'W', [num_units * 2, num_labels], dtype=dtype,
+                initializer=tf.truncated_normal_initializer(stddev=.01))
+            b = tf.get_variable(
+                'b', [num_labels], dtype=dtype,
+                initializer=tf.constant_initializer(.1))
 
         logits = tf.reshape(
             tf.matmul(output, W) + b, [-1, num_steps, num_labels])
