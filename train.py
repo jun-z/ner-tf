@@ -19,7 +19,7 @@ tf.app.flags.DEFINE_integer('num_layers', 1, 'Number of LSTM layers.')
 tf.app.flags.DEFINE_integer('num_steps', 25, 'Max number of time steps')
 tf.app.flags.DEFINE_integer('num_labels', 8, 'Number of labels.')
 tf.app.flags.DEFINE_integer('emb_size', 10, 'Size of embedding.')
-tf.app.flags.DEFINE_integer('vocab_size', 45, 'Size of vocabulary.')
+tf.app.flags.DEFINE_integer('vocab_size', 55, 'Size of vocabulary.')
 tf.app.flags.DEFINE_float('learning_rate', .03, 'Learning rate.')
 tf.app.flags.DEFINE_float('max_clip_norm', 5.0, 'Clip norm for gradients.')
 tf.app.flags.DEFINE_bool('use_fp16', False, 'Use tf.float16.')
@@ -44,19 +44,21 @@ def create_model(session):
     if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
         print('Restoring model from %s.' % ckpt.model_checkpoint_path)
         model.saver.restore(session, ckpt.model_checkpoint_path)
+        epoch = int(ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1])
     else:
         print('Created model with fresh parameters.')
         session.run(tf.global_variables_initializer())
-    return model
+        epoch = 0
+    return epoch, model
 
 
 def train():
     train, valid, test = load_data(FLAGS.data_dir)
 
     with tf.Session() as sess:
-        model = create_model(sess)
+        epoch, model = create_model(sess)
         batch_size = FLAGS.batch_size
-        for epoch in range(FLAGS.num_epochs):
+        for i in range(FLAGS.num_epochs):
             for p in range(0, len(train['inputs']), batch_size):
                 sess.run(
                     model.train,
@@ -68,7 +70,7 @@ def train():
             model.saver.save(
                 sess,
                 os.path.join(FLAGS.train_dir, 'ner.ckpt'),
-                global_step=epoch)
+                global_step=(epoch + i + 1))
             loss, probs = sess.run(
                 [model.loss, model.probs], feed_dict={
                     model.inputs: valid['inputs'],
@@ -77,7 +79,7 @@ def train():
                     model.weights: valid['weights']})
             preds = np.argmax(probs, axis=2)
             l_acc, r_acc = accuracy(preds, valid['labels'], valid['lengths'])
-            print('Epoch %i finished' % epoch)
+            print('Epoch %i finished' % (epoch + i + 1))
             print('* validation loss %0.2f' % loss)
             print('* label level accuracy %0.2f' % l_acc)
             print('* record level accuracy %0.2f' % r_acc)
