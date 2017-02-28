@@ -12,7 +12,7 @@ from utils import load_data, load_vocab, accuracy
 
 tf.app.flags.DEFINE_string('data_dir', './data', 'Data directory.')
 tf.app.flags.DEFINE_string('train_dir', './model', 'Training directory.')
-tf.app.flags.DEFINE_integer('num_epochs', 5, 'Number of epochs.')
+tf.app.flags.DEFINE_integer('num_epochs', 5, 'Number of epochs to train.')
 tf.app.flags.DEFINE_integer('batch_size', 20, 'Batch size.')
 tf.app.flags.DEFINE_integer('num_units', 50, 'Number of units in LSTM.')
 tf.app.flags.DEFINE_integer('num_layers', 1, 'Number of LSTM layers.')
