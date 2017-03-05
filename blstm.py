@@ -18,10 +18,11 @@ class BLSTM(object):
         self.lengths = tf.placeholder(tf.int32, [None])
         self.weights = tf.placeholder(dtype, [None, num_steps])
 
-        embedding = tf.get_variable(
-            'embedding', [vocab_size, emb_size], dtype=dtype)
+        with tf.device('/cpu:0'):
+            embedding = tf.get_variable(
+                'embedding', [vocab_size, emb_size], dtype=dtype)
 
-        inp_emb = tf.nn.embedding_lookup(embedding, self.inputs)
+            inp_emb = tf.nn.embedding_lookup(embedding, self.inputs)
 
         cell = tf.nn.rnn_cell.BasicLSTMCell(num_units)
         if num_layers > 1:
