@@ -20,6 +20,7 @@ tf.app.flags.DEFINE_integer('num_steps', 25, 'Max number of time steps')
 tf.app.flags.DEFINE_integer('num_labels', 8, 'Number of labels.')
 tf.app.flags.DEFINE_integer('emb_size', 10, 'Size of embedding.')
 tf.app.flags.DEFINE_integer('vocab_size', 55, 'Size of vocabulary.')
+tf.app.flags.DEFINE_integer('es_patience', 0, 'Patience for early stopping.')
 tf.app.flags.DEFINE_float('learning_rate', .03, 'Learning rate.')
 tf.app.flags.DEFINE_float('max_clip_norm', 5.0, 'Clip norm for gradients.')
 tf.app.flags.DEFINE_bool('use_fp16', False, 'Use tf.float16.')
@@ -58,34 +59,55 @@ def train():
     with tf.Session() as sess:
         epoch, model = create_model(sess)
         batch_size = FLAGS.batch_size
+        valid_losses = []
+        N = 0
+
         for i in range(FLAGS.num_epochs):
-            for p in range(0, len(train['inputs']), batch_size):
-                sess.run(
-                    model.train,
+            train_losses = []
+            for p in range(0, len(train['tokens']), batch_size):
+                loss, _ = sess.run(
+                    [model.loss, model.train],
                     feed_dict={
-                        model.inputs: train['inputs'][p:p + batch_size],
+                        model.inputs: train['tokens'][p:p + batch_size],
                         model.labels: train['labels'][p:p + batch_size],
                         model.lengths: train['lengths'][p:p + batch_size],
                         model.weights: train['weights'][p:p + batch_size]})
+                train_losses.append(loss)
+
             model.saver.save(
                 sess,
                 os.path.join(FLAGS.train_dir, 'ner.ckpt'),
                 global_step=(epoch + i + 1))
+
             loss, probs = sess.run(
                 [model.loss, model.probs], feed_dict={
-                    model.inputs: valid['inputs'],
+                    model.inputs: valid['tokens'],
                     model.labels: valid['labels'],
                     model.lengths: valid['lengths'],
                     model.weights: valid['weights']})
+            valid_losses.append(loss)
+
             preds = np.argmax(probs, axis=2)
             l_acc, r_acc = accuracy(preds, valid['labels'], valid['lengths'])
             print('Epoch %i finished' % (epoch + i + 1))
+            print('* final training loss %0.2f' % train_losses[-1])
             print('* validation loss %0.2f' % loss)
             print('* label level accuracy %0.2f' % l_acc)
             print('* record level accuracy %0.2f' % r_acc)
+
+            if FLAGS.es_patience > 0 and len(valid_losses) >= 2:
+                if valid_losses[-1] >= valid_losses[-2]:
+                    N += 1
+                else:
+                    N = 0
+                if N == 2:
+                    print('Validation loss stopped decreasing.')
+                    print('Stopping training...')
+                    break
+
         loss, probs = sess.run(
             [model.loss, model.probs], feed_dict={
-                model.inputs: test['inputs'],
+                model.inputs: test['tokens'],
                 model.labels: test['labels'],
                 model.lengths: test['lengths'],
                 model.weights: test['weights']})
