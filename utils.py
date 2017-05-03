@@ -21,7 +21,7 @@ def load_data(data_dir):
     return train_set, valid_set, test_set
 
 
-def load_vocab(data_dir, ext):
+def load_list(data_dir, ext):
     files = os.listdir(data_dir)
     for f in files:
         if f.endswith(ext):

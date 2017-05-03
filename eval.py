@@ -7,7 +7,7 @@ import cPickle as pickle
 import tensorflow as tf
 
 from blstm import BLSTM
-from utils import load_vocab
+from utils import load_list
 
 tf.app.flags.DEFINE_string('input', '', 'Input file.')
 tf.app.flags.DEFINE_string('output', '', 'Output file.')
@@ -58,8 +58,8 @@ def write_record(f, inputs, true_labels, pred_labels):
 
 
 def eval():
-    vocab_l = load_vocab(FLAGS.data_dir, '.vocab')
-    labels_l = load_vocab(FLAGS.data_dir, '.labels')
+    vocab_l = load_list(FLAGS.data_dir, '.vocab')
+    labels_l = load_list(FLAGS.data_dir, '.labels')
     if FLAGS.flat_file:
         pass
     else:

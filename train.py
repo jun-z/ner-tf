@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 
 from blstm import BLSTM
-from utils import load_data, load_vocab, accuracy
+from utils import load_data, load_list, accuracy
 
 tf.app.flags.DEFINE_string('data_dir', './data', 'Data directory.')
 tf.app.flags.DEFINE_string('train_dir', './model', 'Training directory.')
@@ -150,8 +150,8 @@ def train():
 
 
 def label():
-    vocab = load_vocab(FLAGS.data_dir, '.vocab')
-    labels = load_vocab(FLAGS.data_dir, '.labels')
+    vocab = load_list(FLAGS.data_dir, '.vocab')
+    labels = load_list(FLAGS.data_dir, '.labels')
     with tf.Session() as sess:
         model = create_model(sess)
         while True:
