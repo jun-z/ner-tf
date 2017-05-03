@@ -23,6 +23,7 @@ tf.app.flags.DEFINE_integer('vocab_size', 55, 'Size of vocabulary.')
 tf.app.flags.DEFINE_integer('es_patience', 0, 'Patience for early stopping.')
 tf.app.flags.DEFINE_float('learning_rate', .03, 'Learning rate.')
 tf.app.flags.DEFINE_float('max_clip_norm', 5.0, 'Clip norm for gradients.')
+tf.app.flags.DEFINE_bool('use_crf', False, 'Use CRF loss.')
 tf.app.flags.DEFINE_bool('use_fp16', False, 'Use tf.float16.')
 tf.app.flags.DEFINE_bool('do_label', False, 'Train model or label sequence.')
 
@@ -39,6 +40,7 @@ def create_model(session):
         FLAGS.vocab_size,
         FLAGS.learning_rate,
         FLAGS.max_clip_norm,
+        FLAGS.use_crf,
         tf.float16 if FLAGS.use_fp16 else tf.float32)
 
     ckpt = tf.train.get_checkpoint_state(FLAGS.train_dir)
@@ -79,15 +81,29 @@ def train():
                 os.path.join(FLAGS.train_dir, 'ner.ckpt'),
                 global_step=(epoch + i + 1))
 
-            loss, probs = sess.run(
-                [model.loss, model.probs], feed_dict={
-                    model.inputs: valid['tokens'],
-                    model.labels: valid['labels'],
-                    model.lengths: valid['lengths'],
-                    model.weights: valid['weights']})
-            valid_losses.append(loss)
+            if FLAGS.use_crf:
+                loss, logits, trans_params = sess.run(
+                    [model.loss, model.logits, model.trans_params],
+                    feed_dict={
+                        model.inputs: valid['tokens'],
+                        model.labels: valid['labels'],
+                        model.lengths: valid['lengths'],
+                        model.weights: valid['weights']})
 
-            preds = np.argmax(probs, axis=2)
+                preds = [
+                    tf.contrib.crf.viterbi_decode(logits[l], trans_params)[0]
+                    for l in range(logits.shape[0])]
+            else:
+                loss, probs = sess.run(
+                    [model.loss, model.probs], feed_dict={
+                        model.inputs: valid['tokens'],
+                        model.labels: valid['labels'],
+                        model.lengths: valid['lengths'],
+                        model.weights: valid['weights']})
+
+                preds = np.argmax(probs, axis=2)
+
+            valid_losses.append(loss)
             l_acc, r_acc = accuracy(preds, valid['labels'], valid['lengths'])
             print('Epoch %i finished' % (epoch + i + 1))
             print('* final training loss %0.2f' % train_losses[-1])
@@ -105,13 +121,27 @@ def train():
                     print('Stopping training...')
                     break
 
-        loss, probs = sess.run(
-            [model.loss, model.probs], feed_dict={
-                model.inputs: test['tokens'],
-                model.labels: test['labels'],
-                model.lengths: test['lengths'],
-                model.weights: test['weights']})
-        preds = np.argmax(probs, axis=2)
+        if FLAGS.use_crf:
+            logits, trans_params = sess.run(
+                [model.logits, model.trans_params], feed_dict={
+                    model.inputs: test['tokens'],
+                    model.labels: test['labels'],
+                    model.lengths: test['lengths'],
+                    model.weights: test['weights']})
+
+            preds = [
+                tf.contrib.crf.viterbi_decode(logits[l], trans_params)[0]
+                for l in range(logits.shape[0])]
+        else:
+            loss, probs = sess.run(
+                [model.loss, model.probs], feed_dict={
+                    model.inputs: test['tokens'],
+                    model.labels: test['labels'],
+                    model.lengths: test['lengths'],
+                    model.weights: test['weights']})
+
+            preds = np.argmax(probs, axis=2)
+
         l_acc, r_acc = accuracy(preds, test['labels'], test['lengths'])
         print('Training finished')
         print('* testing loss %0.2f' % loss)
