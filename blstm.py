@@ -14,7 +14,7 @@ class BLSTM(object):
                  use_crf,
                  dtype=tf.float32):
 
-        self.inputs = tf.placeholder(tf.int32, [None, num_steps])
+        self.tokens = tf.placeholder(tf.int32, [None, num_steps])
         self.labels = tf.placeholder(tf.int32, [None, num_steps])
         self.lengths = tf.placeholder(tf.int32, [None])
         self.weights = tf.placeholder(dtype, [None, num_steps])
@@ -23,7 +23,7 @@ class BLSTM(object):
             embedding = tf.get_variable(
                 'embedding', [vocab_size, emb_size], dtype=dtype)
 
-            inp_emb = tf.nn.embedding_lookup(embedding, self.inputs)
+            inp_emb = tf.nn.embedding_lookup(embedding, self.tokens)
 
         cell = tf.nn.rnn_cell.BasicLSTMCell(num_units)
         if num_layers > 1:

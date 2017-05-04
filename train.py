@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 
 from blstm import BLSTM
-from utils import load_data, load_list, accuracy
+from utils import load_data, accuracy
 
 tf.app.flags.DEFINE_string('data_dir', './data', 'Data directory.')
 tf.app.flags.DEFINE_string('train_dir', './model', 'Training directory.')
@@ -70,7 +70,7 @@ def train():
                 loss, _ = sess.run(
                     [model.loss, model.train],
                     feed_dict={
-                        model.inputs: train['tokens'][p:p + batch_size],
+                        model.tokens: train['tokens'][p:p + batch_size],
                         model.labels: train['labels'][p:p + batch_size],
                         model.lengths: train['lengths'][p:p + batch_size],
                         model.weights: train['weights'][p:p + batch_size]})
@@ -85,7 +85,7 @@ def train():
                 loss, logits, trans_params = sess.run(
                     [model.loss, model.logits, model.trans_params],
                     feed_dict={
-                        model.inputs: valid['tokens'],
+                        model.tokens: valid['tokens'],
                         model.labels: valid['labels'],
                         model.lengths: valid['lengths'],
                         model.weights: valid['weights']})
@@ -96,7 +96,7 @@ def train():
             else:
                 loss, probs = sess.run(
                     [model.loss, model.probs], feed_dict={
-                        model.inputs: valid['tokens'],
+                        model.tokens: valid['tokens'],
                         model.labels: valid['labels'],
                         model.lengths: valid['lengths'],
                         model.weights: valid['weights']})
@@ -124,7 +124,7 @@ def train():
         if FLAGS.use_crf:
             logits, trans_params = sess.run(
                 [model.logits, model.trans_params], feed_dict={
-                    model.inputs: test['tokens'],
+                    model.tokens: test['tokens'],
                     model.labels: test['labels'],
                     model.lengths: test['lengths'],
                     model.weights: test['weights']})
@@ -135,7 +135,7 @@ def train():
         else:
             loss, probs = sess.run(
                 [model.loss, model.probs], feed_dict={
-                    model.inputs: test['tokens'],
+                    model.tokens: test['tokens'],
                     model.labels: test['labels'],
                     model.lengths: test['lengths'],
                     model.weights: test['weights']})
@@ -149,36 +149,8 @@ def train():
         print('* record level accuracy %0.2f' % r_acc)
 
 
-def label():
-    vocab = load_list(FLAGS.data_dir, '.vocab')
-    labels = load_list(FLAGS.data_dir, '.labels')
-    with tf.Session() as sess:
-        model = create_model(sess)
-        while True:
-            tokens = raw_input('Please enter query: ').split()
-            inputs = []
-            for t in tokens:
-                if t in vocab:
-                    inputs.append(vocab.index(t))
-                else:
-                    inputs.append(1)
-            length = len(inputs)
-            inputs += [0] * (FLAGS.num_steps - length)
-            probs = sess.run(model.probs,
-                             feed_dict={
-                                 model.inputs: [inputs],
-                                 model.lengths: [length]
-                             })
-            preds = np.argmax(probs, axis=2)[0]
-            for i in range(length):
-                print(tokens[i], '->', labels[preds[i]])
-
-
 def main(_):
-    if FLAGS.do_label:
-        label()
-    else:
-        train()
+    train()
 
 
 if __name__ == '__main__':

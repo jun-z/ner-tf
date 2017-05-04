@@ -129,7 +129,7 @@ def proc():
                 tokens = []
                 labels = []
                 for line in f:
-                    if line == '\n':
+                    if line == '\n' and tokens and labels:
                         length = len(tokens)
                         weights = [1] * len(tokens) + [0] * (_length - length)
 
