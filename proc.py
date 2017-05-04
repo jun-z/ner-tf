@@ -5,10 +5,14 @@ from __future__ import division
 import os
 import glob
 import pickle
+import numpy as np
 import tensorflow as tf
 
 tf.app.flags.DEFINE_string('data_dir', './data', 'Data directory.')
-tf.app.flags.DEFINE_integer('max_vocab_size', 1000, 'Max vocabulary size')
+tf.app.flags.DEFINE_integer('max_vocab_size', 1000, 'Max vocabulary size.')
+tf.app.flags.DEFINE_float('test_split', .2, 'Split for testing data.')
+tf.app.flags.DEFINE_float('valid_split', .2, 'Split for validation data.')
+tf.app.flags.DEFINE_bool('split_data', False, 'Split dataset.')
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -46,20 +50,67 @@ def init(inputs):
     return vocab, labels, max(lengths)
 
 
+def get_path(fn):
+    return os.path.join(FLAGS.data_dir, fn)
+
+
+def split_data(inputs):
+    if isinstance(inputs, str):
+        inputs = [inputs]
+
+    if len(inputs) == 0:
+        raise Exception('Did not find file with .iob ext.')
+    elif len(inputs) > 1:
+        raise Exception('Found more than one file with .iob ext.')
+
+    for k in ['train', 'valid', 'test']:
+        fn = 'ner.%s.iob' % k
+        if os.path.isfile(fn):
+            raise Exception('Found file %s.' % fn)
+
+    with open(inputs[0]) as f:
+        record = []
+        for line in f:
+            if line == '\n' and record:
+                record.append(line)
+                rn = np.random.random()
+                if rn < FLAGS.test_split:
+                    with open(get_path('ner.test.iob'), 'a') as f:
+                        f.writelines(record)
+                elif rn < FLAGS.test_split + FLAGS.valid_split:
+                    with open(get_path('ner.valid.iob'), 'a') as f:
+                        f.writelines(record)
+                else:
+                    with open(get_path('ner.train.iob'), 'a') as f:
+                        f.writelines(record)
+                record = []
+            else:
+                record.append(line)
+
+
 def write_list(l, kind):
-    with open(os.path.join(FLAGS.data_dir, 'ner.%s' % kind), 'w') as f:
+    with open(get_path('ner.%s' % kind), 'w') as f:
         f.write('\n'.join(l))
 
 
 def write_data(data, kind):
-    with open(os.path.join(FLAGS.data_dir, 'ner.%s.pkl' % kind), 'wb') as f:
+    with open(get_path('ner.%s.pkl' % kind), 'wb') as f:
         pickle.dump(data, f, 2)
 
 
 def proc():
-    files = {}
-    for k in ['train', 'valid', 'test']:
-        files[k] = glob.glob(os.path.join(FLAGS.data_dir, '*.%s.iob' % k))
+    if FLAGS.split_data:
+        split_data(glob.glob(get_path('*.iob')))
+
+        files = {
+            'train': [get_path('ner.train.iob')],
+            'valid': [get_path('ner.valid.iob')],
+            'test':  [get_path('ner.test.iob')]
+        }
+    else:
+        files = {}
+        for k in ['train', 'valid', 'test']:
+            files[k] = glob.glob(get_path('*.%s.iob' % k))
 
     _vocab, _labels, _length = init(
         files['train'] + files['valid'] + files['test'])
