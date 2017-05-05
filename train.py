@@ -25,7 +25,6 @@ tf.app.flags.DEFINE_float('learning_rate', .03, 'Learning rate.')
 tf.app.flags.DEFINE_float('max_clip_norm', 5.0, 'Clip norm for gradients.')
 tf.app.flags.DEFINE_bool('use_crf', False, 'Use CRF loss.')
 tf.app.flags.DEFINE_bool('use_fp16', False, 'Use tf.float16.')
-tf.app.flags.DEFINE_bool('do_label', False, 'Train model or label sequence.')
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -58,11 +57,15 @@ def create_model(session):
 def train():
     train, valid, test = load_data(FLAGS.data_dir)
 
+    if not os.path.exists(FLAGS.train_dir):
+        print('Training directory `%s` does not exist, creating...')
+        os.makedirs(FLAGS.train_dir)
+
     with tf.Session() as sess:
         epoch, model = create_model(sess)
         batch_size = FLAGS.batch_size
         valid_losses = []
-        N = 0
+        es_count = 0
 
         for i in range(FLAGS.num_epochs):
             train_losses = []
@@ -113,10 +116,10 @@ def train():
 
             if FLAGS.es_patience > 0 and len(valid_losses) >= 2:
                 if valid_losses[-1] >= valid_losses[-2]:
-                    N += 1
+                    es_count += 1
                 else:
-                    N = 0
-                if N == 2:
+                    es_count = 0
+                if es_count == 2:
                     print('Validation loss stopped decreasing.')
                     print('Stopping training...')
                     break
