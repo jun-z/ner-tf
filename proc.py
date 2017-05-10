@@ -78,8 +78,9 @@ def get_vocab(tokens=None):
         with open(embs[0]) as f:
             for i, line in enumerate(f):
                 if i == 0:
-                    emb_size = len(line.split()) - 1
-                tokens.append(line.split()[0])
+                    emb_size = int(line.split()[1])
+                else:
+                    tokens.append(line.split()[0])
         return specials + tokens, emb_size
 
 
