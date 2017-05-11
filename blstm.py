@@ -12,6 +12,8 @@ class BLSTM(object):
                  learning_rate,
                  max_clip_norm,
                  use_crf,
+                 initial_embs,
+                 trainable_embs,
                  dtype=tf.float32):
 
         self.tokens = tf.placeholder(tf.int32, [None, num_steps])
@@ -20,8 +22,14 @@ class BLSTM(object):
         self.weights = tf.placeholder(dtype, [None, num_steps])
 
         with tf.device('/cpu:0'):
-            embedding = tf.get_variable(
-                'embedding', [vocab_size, emb_size], dtype=dtype)
+            if initial_embs is not None:
+                embedding = tf.get_variable(
+                    'embedding', dtype=dtype,
+                    trainable=trainable_embs,
+                    initializer=tf.constant(initial_embs))
+            else:
+                embedding = tf.get_variable(
+                    'embedding', [vocab_size, emb_size], dtype=dtype)
 
             inp_emb = tf.nn.embedding_lookup(embedding, self.tokens)
 
