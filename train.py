@@ -152,7 +152,7 @@ def train():
                     es_count += 1
                 else:
                     es_count = 0
-                if es_count == 2:
+                if es_count == FLAGS.es_patience:
                     print('Validation loss stopped decreasing.')
                     print('Stopping training...')
                     break
