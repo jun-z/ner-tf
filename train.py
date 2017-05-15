@@ -24,6 +24,7 @@ tf.app.flags.DEFINE_integer('vocab_size', 55, 'Size of vocabulary.')
 tf.app.flags.DEFINE_integer('es_patience', 0, 'Patience for early stopping.')
 tf.app.flags.DEFINE_float('learning_rate', .03, 'Learning rate.')
 tf.app.flags.DEFINE_float('max_clip_norm', 5.0, 'Clip norm for gradients.')
+tf.app.flags.DEFINE_bool('save_best_only', True, 'Save only best models.')
 tf.app.flags.DEFINE_bool('trainable_embs', True, 'Trainable embeddings.')
 tf.app.flags.DEFINE_bool('pretrained_embs', False, 'Pretrained embeddings.')
 tf.app.flags.DEFINE_bool('use_crf', False, 'Use CRF loss.')
@@ -112,11 +113,6 @@ def train():
                         model.weights: train['weights'][p:p + batch_size]})
                 train_losses.append(loss)
 
-            model.saver.save(
-                sess,
-                os.path.join(FLAGS.train_dir, 'ner.ckpt'),
-                global_step=(epoch + i + 1))
-
             if FLAGS.use_crf:
                 loss, logits, trans_params = sess.run(
                     [model.loss, model.logits, model.trans_params],
@@ -146,6 +142,18 @@ def train():
             print('* validation loss %0.2f' % loss)
             print('* label level accuracy %0.2f' % l_acc)
             print('* record level accuracy %0.2f' % r_acc)
+
+            if FLAGS.save_best_only and len(valid_losses) >= 2:
+                if valid_losses[-1] < min(valid_losses[:-1]):
+                    model.saver.save(
+                        sess,
+                        os.path.join(FLAGS.train_dir, 'ner.ckpt'),
+                        global_step=(epoch + i + 1))
+            else:
+                model.saver.save(
+                    sess,
+                    os.path.join(FLAGS.train_dir, 'ner.ckpt'),
+                    global_step=(epoch + i + 1))
 
             if FLAGS.es_patience > 0 and len(valid_losses) >= 2:
                 if valid_losses[-1] >= valid_losses[-2]:
