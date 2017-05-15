@@ -29,7 +29,8 @@ class BLSTM(object):
                     initializer=tf.constant(initial_embs))
             else:
                 embedding = tf.get_variable(
-                    'embedding', [vocab_size, emb_size], dtype=dtype)
+                    'embedding', [vocab_size, emb_size],
+                    dtype=dtype, trainable=trainable_embs)
 
             inp_emb = tf.nn.embedding_lookup(embedding, self.tokens)
 
