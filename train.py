@@ -10,6 +10,7 @@ import tensorflow as tf
 
 from blstm import BLSTM
 from utils import load_data, accuracy
+from sklearn.utils import shuffle
 
 tf.app.flags.DEFINE_string('data_dir', './data', 'Data directory.')
 tf.app.flags.DEFINE_string('train_dir', './model', 'Training directory.')
@@ -97,20 +98,23 @@ def train():
 
     with tf.Session() as sess:
         epoch, model = create_model(sess)
-        batch_size = FLAGS.batch_size
         valid_losses = []
         es_count = 0
 
         for i in range(FLAGS.num_epochs):
             train_losses = []
-            for p in range(0, len(train['tokens']), batch_size):
+            tokens, labels, lengths, weights = shuffle(
+                train['tokens'], train['labels'],
+                train['lengths'], train['weights'])
+
+            for p in range(0, len(tokens), FLAGS.batch_size):
                 loss, _ = sess.run(
                     [model.loss, model.train],
                     feed_dict={
-                        model.tokens: train['tokens'][p:p + batch_size],
-                        model.labels: train['labels'][p:p + batch_size],
-                        model.lengths: train['lengths'][p:p + batch_size],
-                        model.weights: train['weights'][p:p + batch_size]})
+                        model.tokens: tokens[p:p + FLAGS.batch_size],
+                        model.labels: labels[p:p + FLAGS.batch_size],
+                        model.lengths: lengths[p:p + FLAGS.batch_size],
+                        model.weights: weights[p:p + FLAGS.batch_size]})
                 train_losses.append(loss)
 
             if FLAGS.use_crf:
