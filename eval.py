@@ -42,6 +42,8 @@ def create_model(session):
         FLAGS.learning_rate,
         FLAGS.max_clip_norm,
         FLAGS.use_crf,
+        None,
+        False,
         tf.float16 if FLAGS.use_fp16 else tf.float32)
 
     ckpt = tf.train.get_checkpoint_state(FLAGS.train_dir)
@@ -59,7 +61,7 @@ def write_record(f, tokens, labels, true_labels=None):
         for i, t in zip(tokens, labels):
             f.write(' '.join([i, t]) + '\n')
     else:
-        for i, t, p in zip(tokens, labels, true_labels):
+        for i, p, t in zip(tokens, labels, true_labels):
             f.write(' '.join([i, t, p]) + '\n')
     f.write('\n')
 
